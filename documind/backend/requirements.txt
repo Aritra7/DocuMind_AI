@@ -1,0 +1,25 @@
+# ./backend/requirements.txt
+
+# Core web framework
+fastapi
+uvicorn[standard]
+
+# Database
+sqlalchemy
+alembic
+psycopg2-binary
+asyncpg
+
+# S3 Storage
+boto3
+
+# PDF processing 
+pdfplumber
+
+# Background Jobs (for now, using FastAPI's built-in)
+# We will add 'rq' later when we need a dedicated worker
+
+# Utilities
+python-dotenv
+python-multipart
+pydantic[email]
