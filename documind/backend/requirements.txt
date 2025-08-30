@@ -13,13 +13,11 @@ asyncpg
 # S3 Storage
 boto3
 
-# PDF processing 
-pdfplumber
-
-# Background Jobs (for now, using FastAPI's built-in)
-# We will add 'rq' later when we need a dedicated worker
+# AI & Embeddings
+pdfplumber 
 
 # Utilities
 python-dotenv
 python-multipart
 pydantic[email]
+
