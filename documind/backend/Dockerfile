@@ -28,4 +28,3 @@ ENTRYPOINT ["/app/entrypoint.sh"]
 
 # The command to run after the entrypoint script finishes
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-

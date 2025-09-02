@@ -13,11 +13,23 @@ asyncpg
 # S3 Storage
 boto3
 
-# AI & Embeddings
-pdfplumber 
+# PDF Processing
+pdfplumber
+
+# AI / Vector DB
+langchain
+langchain-community
+langchain-huggingface
+langchain-pinecone
+sentence-transformers
+pinecone
+
+# Local LLM libraries
+torch
+transformers
+accelerate
 
 # Utilities
 python-dotenv
 python-multipart
 pydantic[email]
-

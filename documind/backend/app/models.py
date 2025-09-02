@@ -1,7 +1,8 @@
 # ./backend/app/models.py
 
 import datetime
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Enum
+from sqlalchemy import Column, Integer, String, DateTime, Text, JSON
+from enum import Enum
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -20,4 +21,11 @@ class Document(Base):
     s3_key = Column(String, unique=True)
     status = Column(String, default=DocumentStatus.UPLOADED)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
-    # In a real app, you'd have a owner_id = Column(Integer, ForeignKey("users.id"))
+
+class Chunk(Base):
+    __tablename__ = "chunks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    doc_id = Column(Integer, index=True) 
+    chunk_text = Column(Text)
+    chunk_metadata = Column(JSON) # Corrected from "metadata"
