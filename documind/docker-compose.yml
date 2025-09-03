@@ -1,6 +1,11 @@
 # ./docker-compose.yml
 
 services:
+  api:
+    env_file:
+      - ./backend/.env
+    build: ./backend
+    
   postgres:
     image: postgres:15
     container_name: documind_postgres

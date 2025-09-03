@@ -6,15 +6,21 @@ import uuid
 import logging
 import tempfile
 import pdfplumber # <-- ADD THIS IMPORT
-from fastapi import FastAPI, File, UploadFile, BackgroundTasks, HTTPException
+from fastapi import FastAPI, File, UploadFile, BackgroundTasks, HTTPException, Path, Body
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import update
+from sqlalchemy.future import select
+from typing import List
 from . import models
+from pydantic import BaseModel
 
 # --- Configuration & Setup ---
-load_dotenv(dotenv_path="../.env")
+#load_dotenv(dotenv_path="../.env")
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,8 +30,10 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_async_engine(DATABASE_URL)
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
+print("DATABASE_URL = ", DATABASE_URL)
+
 # S3 Client
-S3_ENDPOINT = os.getenv("S3_ENDPOINT")
+S3_ENDPOINT = os.getenv("S3_ENDPOINT", "http://minio:9000")
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 S3_BUCKET = os.getenv("S3_BUCKET")
@@ -38,6 +46,14 @@ s3_client = boto3.client(
 )
 
 app = FastAPI(title="DocuMind AI")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # or ["*"] for quick dev testing
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- Background Task (The Processing Pipeline) ---
 
@@ -79,7 +95,7 @@ async def process_document(doc_id: int, s3_key: str):
 
             # Future steps will go here (chunking, embedding, etc.)
 
-        # 3. Update the document status in Postgres to "ready"
+        # 3. Update the document status in Postgres to "READY"
         await set_document_status(doc_id, models.DocumentStatus.READY)
         logger.info(f"Updated status to READY for doc_id: {doc_id}")
 
@@ -146,3 +162,52 @@ async def upload_document(
     logger.info(f"Queued processing for doc_id: {doc_id}")
     
     return {"doc_id": doc_id, "s3_key": s3_key, "status": "processing"}
+
+@app.get("/documents")
+async def list_documents():
+    """Return all documents in the DB."""
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(models.Document))
+        docs = result.scalars().all()
+
+        # Convert SQLAlchemy models to dict (fastapi can auto JSONify pydantic or dicts)
+        return [
+            {
+                "id": doc.id,
+                "filename": doc.title,
+                "status": (doc.status.value if hasattr(doc.status, "value") else str(doc.status)).upper(),
+                "s3_key": doc.s3_key,
+            }
+            for doc in docs
+        ]
+    
+@app.get("/documents/{doc_id}")
+async def get_document(doc_id: int):
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(models.Document).where(models.Document.id == doc_id)
+        )
+        doc = result.scalar_one_or_none()
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        return {
+            "id": doc.id,
+            "filename": doc.title,
+            "status": (doc.status.value if hasattr(doc.status, "value") else str(doc.status)).upper(),
+            "s3_key": doc.s3_key,
+        }
+    
+@app.get("/files/{doc_id}")
+async def get_file(doc_id: int):
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(select(models.Document).where(models.Document.id == doc_id))
+        doc = result.scalar_one_or_none()
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        # Download file stream from S3/MinIO
+        s3_object = s3_client.get_object(Bucket=S3_BUCKET, Key=doc.s3_key)
+        return StreamingResponse(
+            s3_object["Body"], media_type="application/pdf"
+        )

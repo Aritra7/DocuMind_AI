@@ -1,23 +1,22 @@
 # ./backend/requirements.txt
 
-# Core web framework
 fastapi
 uvicorn[standard]
-
-# Database
 sqlalchemy
 alembic
 psycopg2-binary
 asyncpg
-
-# S3 Storage
 boto3
-
-# AI & Embeddings
 pdfplumber 
-
-# Utilities
 python-dotenv
 python-multipart
 pydantic[email]
-
+minio
+langchain
+sentence-transformers
+pinecone-client
+redis
+openai
+tiktoken
+langchain-openai
+langchain-pinecone
