@@ -56,7 +56,12 @@ PINECONE_INDEX_NAME = "documind-index"
 
 # Embedding Model & LLM
 embedding_model = HuggingFaceEmbeddings(model_name='all-MiniLM-L6-v2')
-hf_pipeline = pipeline("text-generation", model="mistralai/Mistral-7B-Instruct-v0.2", max_new_tokens=1024)
+hf_pipeline = pipeline(
+    "text-generation", 
+    model="microsoft/Phi-3-mini-4k-instruct", 
+    trust_remote_code=True, # Required for Phi-3
+    torch_dtype="auto"
+)
 llm = HuggingFacePipeline(pipeline=hf_pipeline)
 
 
@@ -212,3 +217,4 @@ Answer:"""
         "answer": result["result"],
         "source_chunks": [doc.page_content for doc in result["source_documents"]]
     }
+
