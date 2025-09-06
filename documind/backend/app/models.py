@@ -10,7 +10,7 @@ Base = declarative_base()
 class DocumentStatus(str, Enum):
     UPLOADED = "uploaded"
     PROCESSING = "processing"
-    READY = "ready"
+    READY = "READY"
     FAILED = "failed"
 
 class Document(Base):
